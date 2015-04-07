@@ -2,6 +2,7 @@
 
 	session_start();
 	include('connection.php');
+	$link = mysqli_connect("localhost", "root", "root", "mydb");
 
 	$messages_query = "SELECT users.id AS user_id, users.first_name AS first_name, users.last_name AS last_name,
 					   messages.message AS message, messages.created_at AS created_at 
@@ -35,8 +36,12 @@
 		}
 		else
 		{
+			$esc_f_name = mysqli_real_escape_string($link, $_POST['f_name']);
+			$esc_l_name = mysqli_real_escape_string($link, $_POST['l_name']);
+			$esc_email = mysqli_real_escape_string($link, $_POST['email']);
+			$esc_password = mysqli_real_escape_string($link, $_POST['password']);
 			$query = "INSERT INTO users (first_name, last_name, email, password, created_at, updated_at)
-					  VALUES('{$_POST['f_name']}', '{$_POST['l_name']}', '{$_POST['email']}', '{$_POST['password']}',
+					  VALUES('{$esc_f_name}', '{$esc_l_name}', '{$esc_email}', '{$esc_password}',
 					  NOW(), NOW())";
 			if(!run_mysql_query($query))
 			{
@@ -80,8 +85,9 @@
 		}
 		else
 		{
+			$esc_message = mysqli_real_escape_string($link, $_POST['message']);
 			$query_mess = "INSERT INTO messages (user_id, message, created_at, updated_at)
-					  	   VALUES('{$_SESSION['user_id']}', '{$_POST['message']}', NOW(), NOW())";
+					  	   VALUES('{$_SESSION['user_id']}', '{$esc_message}', NOW(), NOW())";
 
 			if(!run_mysql_query($query_mess))
 			{
@@ -103,9 +109,11 @@
 		}
 		else
 		{
+			$esc_comment = mysqli_real_escape_string($link, $_POST['comment']);
+			$esc_id = mysqli_real_escape_string($link, $_POST['message_id']);
 			$query_comment = "INSERT INTO comments (coment, created_at, updated_at, user_id, message_id)
-					  	      VALUES('{$_POST['comment']}', NOW(), NOW(), '{$_SESSION['user_id']}',
-					  	      '{$_POST['message_id']}' )";
+					  	      VALUES('{$esc_comment}', NOW(), NOW(), '{$_SESSION['user_id']}',
+					  	      '{$esc_id}' )";
 			if(!run_mysql_query($query_comment))
 			{
 				$_SESSION['errors'][] = 'We have encountered an error! Please submit your comment again!';
@@ -120,8 +128,11 @@
 	}
 	elseif(!empty($_POST['action']) && $_POST['action'] == 'delete')
 	{
+		$esc_row = mysqli_real_escape_string($link, $_POST['row']);
 		$query_delete = "DELETE FROM messages
-						 WHERE id = '{$_POST['row']}'";
+						 WHERE id = '{$esc_row}'";
+						 // var_dump($query_delete);
+						 // die();
 		if(!run_mysql_query($query_delete))
 		{
 			$_SESSION['errors'][] = 'Sorry your message was not deleted. Please try again.';
