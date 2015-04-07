@@ -3,11 +3,13 @@
 	session_start();
 	include('connection.php');
 
-	$messages_query = "SELECT * FROM users
+	$messages_query = "SELECT users.id AS user_id, users.first_name AS first_name, users.last_name AS last_name,
+					   messages.message AS message, messages.created_at AS created_at 
+					   FROM users
 					   JOIN messages 
 					   ON users.id = messages.user_id
-					   ORDER BY messages.created_at DESC";
-	$_SESSION['all_messages'] = fetch($messages_query);
+					   ORDER BY created_at DESC";
+	$_SESSION['all_messages'][] = fetch($messages_query);
 
 	if(!empty($_POST['action']) && $_POST['action'] == 'register')
 	{	
@@ -53,13 +55,11 @@
 		$query = "SELECT * FROM users WHERE users.email = '{$_POST['email']}'
 				  AND users.password = '{$_POST['password']}'";
 		$user_query = fetch($query);
-		// var_dump($user_query);
-		// die();
 
 		if(count($user_query) > 0)
 		{
-			$_SESSION['user_id'] = $user_query[0]['id'];
-			$_SESSION['user_name'] = $user_query[0]['first_name'];
+			$_SESSION['user_id'] = $user_query['id'];
+			$_SESSION['user_name'] = $user_query['first_name'];
 			$_SESSION['logged_in'] = TRUE;
 			// var_dump($user_query);
 			header('location: success.php');
@@ -82,6 +82,7 @@
 		{
 			$query_mess = "INSERT INTO messages (user_id, message, created_at, updated_at)
 					  	   VALUES('{$_SESSION['user_id']}', '{$_POST['message']}', NOW(), NOW())";
+
 			if(!run_mysql_query($query_mess))
 			{
 				$_SESSION['errors'][] = 'We have encountered an error! Please submit your message again!';
@@ -93,6 +94,43 @@
 		}
 		header('location: success.php');
 		die();
+	}
+	elseif(!empty($_POST['action']) && $_POST['action'] == 'post_comment')
+	{
+		if(empty($_POST['comment']))
+		{
+			$_SESSION['errors'][] = 'You must type something within the comment field to post a comment!';
+		}
+		else
+		{
+			$query_comment = "INSERT INTO comments (coment, created_at, updated_at, user_id, message_id)
+					  	      VALUES('{$_POST['comment']}', NOW(), NOW(), '{$_SESSION['user_id']}',
+					  	      '{$_POST['message_id']}' )";
+			if(!run_mysql_query($query_comment))
+			{
+				$_SESSION['errors'][] = 'We have encountered an error! Please submit your comment again!';
+			}
+			else
+			{
+				$_SESSION['message_success'] = 'Congratulations! Your comment has been posted!';
+			}		  
+		}
+		header('location: success.php');
+		die();
+	}
+	elseif(!empty($_POST['action']) && $_POST['action'] == 'delete')
+	{
+		$query_delete = "DELETE FROM messages
+						 WHERE id = '{$_POST['row']}'";
+		if(!run_mysql_query($query_delete))
+		{
+			$_SESSION['errors'][] = 'Sorry your message was not deleted. Please try again.';
+		}
+		else
+		{
+			$_SESSION['message_success'] = 'Your message was successfully deleted!';
+		}
+		header('location: success.php');
 	}
 	else //malicious navigation, or someone is logging off
 	{
